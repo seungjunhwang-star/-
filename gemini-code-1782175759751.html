@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>네온 아케이드 게임 허브</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen text-white font-sans p-4">
+
+    <div id="arcadeHub" class="w-full max-w-2xl bg-gray-900/90 p-8 rounded-3xl border border-cyan-500/40 neon-border text-center transition-all duration-500">
+        <h1 class="text-5xl font-extrabold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 mb-2 neon-text-cyan">
+            NEON ARCADE
+        </h1>
+        <p class="text-sm text-gray-400 mb-10">원하는 네온 아케이드 게임을 선택하여 플레이하세요!</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div onclick="selectGame('breaker')" class="neon-card bg-gray-950 p-6 rounded-2xl border border-cyan-500/30 cursor-pointer transition-all duration-300 flex flex-col items-center text-center">
+                <div class="text-4xl mb-3">🧱</div>
+                <h2 class="text-xl font-bold text-cyan-400 mb-2 uppercase tracking-wide">Neon Breaker</h2>
+                <p class="text-xs text-gray-400 leading-relaxed">빛나는 네온 장벽을 깨부수고 다양한 아이템을 획득하는 클래식 벽돌깨기</p>
+                <span class="mt-4 text-xs bg-cyan-950 text-cyan-400 px-3 py-1 rounded-full border border-cyan-500/30 font-semibold">PLAY GAME</span>
+            </div>
+
+            <div onclick="selectGame('runner')" class="neon-card-pink bg-gray-950 p-6 rounded-2xl border border-pink-500/30 cursor-pointer transition-all duration-300 flex flex-col items-center text-center">
+                <div class="text-4xl mb-3">🏃‍♂️</div>
+                <h2 class="text-xl font-bold text-pink-400 mb-2 uppercase tracking-wide">Neon Runner</h2>
+                <p class="text-xs text-gray-400 leading-relaxed">3개의 트랙을 넘나들며 장애물을 뛰어넘고 골드와 에너지를 흡수하는 러닝 게임</p>
+                <span class="mt-4 text-xs bg-pink-950 text-pink-400 px-3 py-1 rounded-full border border-pink-500/30 font-semibold">PLAY GAME</span>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="gameCabinet" class="relative flex flex-col items-center bg-gray-900/80 p-6 rounded-2xl border border-cyan-500/30 neon-border max-w-full hidden">
+        
+        <div class="w-full flex justify-between items-center mb-4 px-2">
+            <button onclick="exitToHub()" class="px-3 py-1 bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white rounded-lg text-xs font-bold transition flex items-center gap-1">
+                ◀ 아케이드 나가기
+            </button>
+            <div class="text-center">
+                <h1 id="cabinetGameTitle" class="text-2xl font-bold tracking-wider text-cyan-400 neon-text-cyan">GAME</h1>
+            </div>
+            <div class="flex space-x-6">
+                <div class="text-right">
+                    <span class="block text-[10px] text-gray-400 uppercase">Score</span>
+                    <span id="scoreDisplay" class="text-xl font-bold text-yellow-400">0</span>
+                </div>
+                <div class="text-right">
+                    <span class="block text-[10px] text-gray-400 uppercase">High Score</span>
+                    <span id="highScoreDisplay" class="text-xl font-bold text-pink-500">0</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="w-full flex justify-between items-center mb-3 px-2 text-sm bg-gray-950/60 py-2 rounded-lg border border-gray-800">
+            <div class="flex items-center space-x-2">
+                <span id="stageLabel" class="text-gray-400">STAGE</span>
+                <span id="stageDisplay" class="font-bold text-cyan-300">1</span>
+            </div>
+            <div id="livesContainer" class="flex space-x-1 text-red-500 text-lg">❤️ ❤️ ❤️</div>
+        </div>
+
+        <div id="itemStatusContainer" class="w-full flex flex-col mb-3 p-3 bg-gray-950/80 rounded-lg border border-cyan-500/20 transition-all duration-300 min-h-[55px]">
+            <div class="flex items-center justify-between mb-1.5">
+                <span class="text-xs text-gray-400 font-semibold uppercase tracking-wider">보유 아이템 버프</span>
+                <span id="noItemsText" class="text-xs text-gray-500">장착 없음 🚫</span>
+            </div>
+            <div id="activeItemsList" class="flex flex-col space-y-1.5 w-full"></div>
+        </div>
+
+        <div class="relative bg-black rounded-lg overflow-hidden border-2 border-gray-800">
+            <canvas id="gameCanvas" width="560" height="400" class="block"></canvas>
+
+            <div id="startScreen" class="absolute inset-0 bg-black/95 flex flex-col items-center justify-center p-6 text-center">
+                <div id="startMenuTitle" class="text-4xl font-extrabold mb-2 tracking-widest neon-text-cyan">GAME TITLE</div>
+                <p id="startMenuDesc" class="text-xs text-gray-400 mb-6 max-w-xs leading-relaxed">게임 설명</p>
+
+                <div id="speedPresetPanel" class="mb-6 bg-gray-950/90 p-4 rounded-xl border border-gray-800 w-full max-w-xs hidden">
+                    <div class="text-xs text-gray-400 font-semibold mb-3 tracking-wider uppercase">공 속도 설정</div>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <button type="button" data-speed="slow" class="speed-btn px-2 py-1.5 bg-gray-900 border border-gray-800 text-gray-400 rounded-lg font-bold transition">느림 (Slow)</button>
+                        <button type="button" data-speed="normal" class="speed-btn px-2 py-1.5 bg-cyan-950/30 border border-cyan-500/50 text-cyan-400 rounded-lg font-bold transition">보통 (Normal)</button>
+                        <button type="button" data-speed="fast" class="speed-btn px-2 py-1.5 bg-gray-900 border border-gray-800 text-gray-400 rounded-lg font-bold transition">빠름 (Fast)</button>
+                        <button type="button" data-speed="veryfast" class="speed-btn px-2 py-1.5 bg-gray-900 border border-gray-800 text-gray-400 rounded-lg font-bold transition">매우빠름 (Max)</button>
+                    </div>
+                </div>
+
+                <button id="startButton" class="px-8 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold rounded-full shadow-lg hover:brightness-110 active:scale-95 transition-all text-lg">
+                    게임 시작
+                </button>
+            </div>
+
+            <div id="resultScreen" class="absolute inset-0 bg-black/90 flex flex-col items-center justify-center p-6 text-center hidden">
+                <div id="resultTitle" class="text-4xl font-extrabold text-pink-500 mb-2 tracking-wider">GAME OVER</div>
+                <p id="resultText" class="text-sm text-gray-300 mb-6">최종 점수: 0점</p>
+                <button id="restartButton" class="px-6 py-2.5 bg-cyan-600 text-white font-bold rounded-lg hover:bg-cyan-500 active:scale-95 transition-all">메인 화면으로</button>
+            </div>
+
+            <div id="pauseScreen" class="absolute inset-0 bg-black/75 flex flex-col items-center justify-center hidden">
+                <div class="text-3xl font-bold text-gray-300 tracking-widest mb-4">PAUSED</div>
+                <p class="text-xs text-gray-400">ESC 또는 SPACE를 눌러 계속하기</p>
+            </div>
+        </div>
+
+        <div class="w-full flex justify-end items-center mt-3 px-2">
+            <button id="pauseButton" class="px-4 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-xs transition">일시정지 (ESC)</button>
+        </div>
+    </div>
+
+<script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // 글로벌 화면 상태 관리
+    let activeGame = null; // 'breaker' 또는 'runner'
+    
+    // UI 요소 연동
+    const arcadeHub = document.getElementById("arcadeHub");
+    const gameCabinet = document.getElementById("gameCabinet");
+    const cabinetGameTitle = document.getElementById("cabinetGameTitle");
+    const startScreen = document.getElementById("startScreen");
+    const startMenuTitle = document.getElementById("startMenuTitle");
+    const startMenuDesc = document.getElementById("startMenuDesc");
+    const speedPresetPanel = document.getElementById("speedPresetPanel");
+    const startButton = document.getElementById("startButton");
+    const resultScreen = document.getElementById("resultScreen");
+    const resultTitle = document.getElementById("resultTitle");
+    const resultText = document.getElementById("resultText");
+    const restartButton = document.getElementById("restartButton");
+    const pauseScreen = document.getElementById("pauseScreen");
+    const pauseButton = document.getElementById("pauseButton");
+    
+    const scoreDisplay = document.getElementById("scoreDisplay");
+    const highScoreDisplay = document.getElementById("highScoreDisplay");
+    const stageLabel = document.getElementById("stageLabel");
+    const stageDisplay = document.getElementById("stageDisplay");
+    const livesContainer = document.getElementById("livesContainer");
+    const activeItemsList = document.getElementById("activeItemsList");
+    const noItemsText = document.getElementById("noItemsText");
+
+    // 오디오 컨텍스트
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+    function initAudio() { if (!audioCtx) audioCtx = new AudioCtx(); }
+
+    function playSound(type) {
+        if (!audioCtx) return;
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        try {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'bounce') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(160, now);
+                osc.frequency.exponentialRampToValueAtTime(320, now + 0.08);
+                gain.gain.setValueAtTime(0.12, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                osc.start(now); osc.stop(now + 0.08);
+            } else if (type === 'break' || type === 'coin') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(type === 'coin' ? 587.33 : 400, now);
+                if(type === 'coin') osc.frequency.setValueAtTime(880, now + 0.08);
+                gain.gain.setValueAtTime(0.08, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                osc.start(now); osc.stop(now + 0.15);
+            } else if (type === 'powerup') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(300, now);
+                osc.frequency.setValueAtTime(500, now + 0.07); osc.frequency.setValueAtTime(700, now + 0.14);
+                gain.gain.setValueAtTime(0.12, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
+                osc.start(now); osc.stop(now + 0.22);
+            } else if (type === 'gameover') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(180, now);
+                osc.frequency.linearRampToValueAtTime(50, now + 0.5);
+                gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                osc.start(now); osc.stop(now + 0.5);
+            } else if (type === 'tick') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(440, now);
+                gain.gain.setValueAtTime(0.15, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                osc.start(now); osc.stop(now + 0.05);
+            } else if (type === 'start') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.setValueAtTime(659.25, now + 0.1);
+                gain.gain.setValueAtTime(0.15, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                osc.start(now); osc.stop(now + 0.25);
+            }
+        } catch(e) {}
+    }
+
+    // 공통 게임 상태 구조체
+    let score = 0;
+    let lives = 3;
+    let stage = 1;
+    let isGameOver = false;
+    let isPaused = false;
+    let isStarted = false;
+    let isCountdownActive = false;
+    let countdownValue = 3;
+    let lastTime = 0;
+    let activePowerUps = {};
+
+    // 정밀 조정된 속도 조절 4단계
+    const SPEED_PRESETS = { slow: 2.2, normal: 3.4, fast: 4.5, veryfast: 5.2 };
+    let currentSpeedPreset = "normal";
+    let ballSpeed = SPEED_PRESETS[currentSpeedPreset];
+
+    // 키보드 핸들러 변수 공유
+    let rightPressed = false;
+    let leftPressed = false;
+    let spacePressed = false;
+
+    // ==========================================
+    // [게임 1: 벽돌깨기 데이터 및 변수군]
+    // ==========================================
+    let balls = [];
+    const initialBallRadius = 8;
+    let paddleHeight = 12;
+    let basePaddleWidth = 80;
+    let paddleWidth = basePaddleWidth;
+    let paddleX = (canvas.width - paddleWidth) / 2;
+    let paddleSpeed = 7;
+    let bricks = [];
+    let brickWidth = 62;
+    let brickHeight = 18;
+    let brickPadding = 8;
+    let brickOffsetTop = 50;
+    let brickOffsetLeft = 20;
+    let particles = [];
+    let powerUps = [];
+    let bottomShieldActive = false;
+    const itemTypesBreaker = [
+        { name: "LONG PADDLE", color: "#10B981", effect: "long", icon: "📏", duration: 8000 },
+        { name: "FIRE BALL", color: "#EF4444", effect: "fire", icon: "🔥", duration: 7000 },
+        { name: "MULTI-BALL", color: "#F59E0B", effect: "multi", icon: "🔮", duration: 0 },
+        { name: "SHIELD", color: "#3B82F6", effect: "shield", icon: "🛡️", duration: 15000 },
+        { name: "LIFE UP", color: "#EC4899", effect: "life", icon: "💖", duration: 0 }
+    ];
+
+    // ==========================================
+    // [게임 2: 네온 러너 데이터 및 변수군]
+    // ==========================================
+    let runnerPlayer = {
+        lane: 1, // 0:왼쪽, 1:가운데, 2:오른쪽
+        currentX: 280,
+        targetX: 280,
+        y: 340,
+        radius: 15,
+        isJumping: false,
+        jumpProgress: 0,
+        jumpDuration: 450, // ms
+        shieldCount: 0,
+        magnetActive: false,
+        boosterActive: false
+    };
+    let runnerEntities = []; // 코인, 장애물, 아이템 모음
+    let runnerSpeed = 3.4;
+    let entitySpawnTimer = 0;
+    let entitySpawnInterval = 750; // ms
+    const runnerLanesX = [160, 280, 400]; // 3개의 네온 레일 중심점 X좌표
+    const itemTypesRunner = [
+        { name: "MAGNET", color: "#A855F7", effect: "run_magnet", icon: "🧲", duration: 7000 },
+        { name: "BOOSTER", color: "#10B981", effect: "run_booster", icon: "⚡", duration: 4000 },
+        { name: "SHIELD", color: "#3B82F6", effect: "run_shield", icon: "🛡️", duration: 12000 }
+    ];
+    let trackScrollY = 0;
+
+    // ==========================================
+    // [허브 네비게이션 및 시스템 제어]
+    // ==========================================
+    function selectGame(game) {
+        initAudio();
+        activeGame = game;
+        arcadeHub.classList.add("hidden");
+        gameCabinet.classList.remove("hidden");
+
+        // 초기화
+        score = 0;
+        isStarted = false;
+        isGameOver = false;
+        isPaused = false;
+        activePowerUps = {};
+        scoreDisplay.textContent = "0";
+        updateActiveItemsUI();
+
+        if (activeGame === 'breaker') {
+            cabinetGameTitle.textContent = "NEON BREAKER";
+            cabinetGameTitle.className = "text-2xl font-bold tracking-wider text-cyan-400 neon-text-cyan";
+            startMenuTitle.textContent = "NEON BREAKER";
+            startMenuTitle.className = "text-4xl font-extrabold mb-2 tracking-widest text-cyan-400 neon-text-cyan";
+            startMenuDesc.textContent = "벽돌을 모두 깨부수고 최고 스테이지(STAGE 7)에 도전하세요. 다양한 버프 에너지가 지원됩니다.";
+            speedPresetPanel.classList.remove("hidden");
+            stageLabel.textContent = "STAGE";
+            stage = 1; stageDisplay.textContent = stage;
+            lives = 3; updateLivesUI();
+            highScoreDisplay.textContent = localStorage.getItem("neon_high_breaker") || 0;
+            initBricks(stage);
+            resetBreakerGame();
+        } else if (activeGame === 'runner') {
+            cabinetGameTitle.textContent = "NEON RUNNER";
+            cabinetGameTitle.className = "text-2xl font-bold tracking-wider text-pink-400 neon-text-pink";
+            startMenuTitle.textContent = "NEON RUNNER";
+            startMenuTitle.className = "text-4xl font-extrabold mb-2 tracking-widest text-pink-400 neon-text-pink";
+            startMenuDesc.textContent = "좌우 화살표 키로 레일을 바꾸고, 스페이스바를 눌러 장애물을 뛰어넘으세요! 골드(🪙)와 3종 네온 에너지를 흡수하세요.";
+            speedPresetPanel.classList.add("hidden");
+            stageLabel.textContent = "METER";
+            stage = 0; stageDisplay.textContent = stage + "m";
+            lives = 3; updateLivesUI();
+            highScoreDisplay.textContent = localStorage.getItem("neon_high_runner") || 0;
+            resetRunnerGame();
+        }
+        startScreen.classList.remove("hidden");
+        resultScreen.classList.add("hidden");
+    }
+
+    function exitToHub() {
+        isStarted = false;
+        activeGame = null;
+        gameCabinet.classList.add("hidden");
+        arcadeHub.classList.remove("hidden");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // 입출력 제어
+    document.addEventListener("keydown", (e) => {
+        if (!isStarted) {
+            if (e.key === " ") { startGame(); e.preventDefault(); }
+            return;
+        }
+        if (e.key === "Escape") { togglePause(); return; }
+        if (e.key === " " && activeGame === 'breaker') { togglePause(); e.preventDefault(); return; }
+
+        if (activeGame === 'breaker') {
+            if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") rightPressed = true;
+            if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") leftPressed = true;
+        } else if (activeGame === 'runner') {
+            if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") {
+                if (runnerPlayer.lane > 0) {
+                    runnerPlayer.lane--;
+                    runnerPlayer.targetX = runnerLanesX[runnerPlayer.lane];
+                    playSound('bounce');
+                }
+            }
+            if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") {
+                if (runnerPlayer.lane < 2) {
+                    runnerPlayer.lane++;
+                    runnerPlayer.targetX = runnerLanesX[runnerPlayer.lane];
+                    playSound('bounce');
+                }
+            }
+            if (e.key === " " || e.key === "Spacebar") {
+                if (!runnerPlayer.isJumping) {
+                    runnerPlayer.isJumping = true;
+                    runnerPlayer.jumpProgress = 0;
+                }
+                e.preventDefault();
+            }
+        }
+    });
+
+    document.addEventListener("keyup", (e) => {
+        if (activeGame === 'breaker') {
+            if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") rightPressed = false;
+            if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") leftPressed = false;
+        }
+    });
+
+    // 마우스 패들 추적 (벽돌깨기 전용)
+    canvas.addEventListener("mousemove", (e) => {
+        if (!isStarted || isPaused || isGameOver || isCountdownActive || activeGame !== 'breaker') return;
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        paddleX = mouseX - paddleWidth / 2;
+        if (paddleX < 0) paddleX = 0;
+        if (paddleX + paddleWidth > canvas.width) paddleX = canvas.width - paddleWidth;
+    });
+
+    // ==========================================
+    // [게임 제어 공통 코어 엔진]
+    // ==========================================
+    function startGame() {
+        initAudio();
+        isStarted = true; isPaused = false; isGameOver = false;
+        score = 0; scoreDisplay.textContent = "0";
+        activePowerUps = {}; updateActiveItemsUI();
+        startScreen.classList.add("hidden");
+        resultScreen.classList.add("hidden");
+
+        if (activeGame === 'breaker') {
+            stage = 1; stageDisplay.textContent = stage;
+            lives = 3; updateLivesUI();
+            initBricks(stage);
+            resetBreakerGame();
+        } else if (activeGame === 'runner') {
+            stage = 0;
+            lives = 3; updateLivesUI();
+            resetRunnerGame();
+        }
+        
+        lastTime = performance.now();
+        startCountdown();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function startCountdown() {
+        isCountdownActive = true; countdownValue = 3;
+        runCountdownStep();
+    }
+    function runCountdownStep() {
+        if (!isStarted || isPaused || isGameOver) return;
+        if (countdownValue > 0) {
+            playSound('tick');
+            setTimeout(() => { if (isCountdownActive) { countdownValue--; runCountdownStep(); } }, 1000);
+        } else if (countdownValue === 0) {
+            countdownValue = "GO!";
+            setTimeout(() => { if (isCountdownActive) isCountdownActive = false; }, 800);
+        }
+    }
+
+    function togglePause() {
+        if (!isStarted || isGameOver || isCountdownActive) return;
+        isPaused = !isPaused;
+        if (isPaused) pauseScreen.classList.remove("hidden");
+        else { pauseScreen.classList.add("hidden"); lastTime = performance.now(); requestAnimationFrame(gameLoop); }
+    }
+
+    function endGame(isWin) {
+        isGameOver = true;
+        playSound('gameover');
+        
+        let hsKey = activeGame === 'breaker' ? "neon_high_breaker" : "neon_high_runner";
+        let currentHS = parseInt(localStorage.getItem(hsKey) || 0);
+        if (score > currentHS) {
+            localStorage.setItem(hsKey, score);
+            highScoreDisplay.textContent = score;
+        }
+
+        if (activeGame === 'breaker' && isWin) {
+            resultTitle.textContent = "ALL CLEAR!";
+            resultTitle.className = "text-4xl font-extrabold text-cyan-400 neon-text-cyan mb-2";
+            resultText.innerHTML = `대단합니다! 모든 차원의 장벽을 무너뜨렸습니다.<br>최종 점수: <span class="text-yellow-400 text-lg font-bold">${score}</span>`;
+        } else {
+            resultTitle.textContent = "GAME OVER";
+            resultTitle.className = "text-4xl font-extrabold text-pink-500 neon-text-pink mb-2";
+            resultText.innerHTML = `아케이드 정복 실패... 다시 도전해보세요.<br>최종 점수: <span class="text-yellow-400 text-lg font-bold">${score}</span>`;
+        }
+        resultScreen.classList.remove("hidden");
+    }
+
+    function gameLoop(timestamp) {
+        if (!isStarted || isPaused || isGameOver) return;
+        let deltaTime = timestamp - lastTime;
+        if (deltaTime > 100) deltaTime = 16;
+        lastTime = timestamp;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (!isCountdownActive) {
+            processPowerUpTimers(deltaTime);
+        }
+
+        if (activeGame === 'breaker') {
+            updateAndDrawBreaker(deltaTime);
+        } else if (activeGame === 'runner') {
+            updateAndDrawRunner(deltaTime);
+        }
+
+        requestAnimationFrame(gameLoop);
+    }
+
+    // ==========================================
+    // [공통 고급 드로잉 보조 유틸리티 함수군]
+    // ==========================================
+    function drawProceduralItem(x, y, type) {
+        ctx.save();
+        ctx.translate(x, y);
+
+        let rotateVal = Math.sin(Date.now() / 200) * 0.15;
+        ctx.rotate(rotateVal);
+
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = type.color;
+        ctx.fillStyle = "rgba(10, 11, 20, 0.9)";
+        ctx.strokeStyle = type.color;
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.roundRect(-10, -14, 20, 28, 10);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.25)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(-6, -10);
+        ctx.lineTo(-6, 2);
+        ctx.stroke();
+
+        ctx.fillStyle = type.color;
+        ctx.strokeStyle = type.color;
+        ctx.lineWidth = 1.8;
+        ctx.shadowBlur = 6;
+
+        const effect = type.effect;
+        if (effect === 'long') {
+            ctx.beginPath();
+            ctx.moveTo(-7, 0); ctx.lineTo(-3, -3); ctx.lineTo(-3, -1);
+            ctx.lineTo(3, -1); ctx.lineTo(3, -3); ctx.lineTo(7, 0);
+            ctx.lineTo(3, 3); ctx.lineTo(3, 1); ctx.lineTo(-3, 1);
+            ctx.lineTo(-3, 3);
+            ctx.closePath(); ctx.fill();
+        } else if (effect === 'fire') {
+            ctx.beginPath();
+            ctx.moveTo(0, 6);
+            ctx.bezierCurveTo(-4, 6, -5, 2, -3, -2);
+            ctx.bezierCurveTo(-4, -5, 0, -8, 0, -8);
+            ctx.bezierCurveTo(0, -8, 4, -5, 3, -2);
+            ctx.bezierCurveTo(5, 2, 4, 6, 0, 6);
+            ctx.closePath(); ctx.fill();
+        } else if (effect === 'multi') {
+            ctx.beginPath(); ctx.arc(0, 0, 3.5, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(0, 0, 7, 2, Math.PI/4, 0, Math.PI*2); ctx.stroke();
+        } else if (effect === 'shield' || effect === 'run_shield') {
+            ctx.beginPath();
+            ctx.moveTo(0, -6); ctx.lineTo(5, -3); ctx.lineTo(5, 3);
+            ctx.lineTo(0, 7); ctx.lineTo(-5, 3); ctx.lineTo(-5, -3);
+            ctx.closePath(); ctx.fill();
+        } else if (effect === 'life') {
+            ctx.beginPath();
+            ctx.moveTo(0, -3);
+            ctx.bezierCurveTo(-3, -6.5, -6.5, -4, -6.5, 0);
+            ctx.bezierCurveTo(-6.5, 3.5, -3, 5.5, 0, 7.5);
+            ctx.bezierCurveTo(3, 5.5, 6.5, 3.5, 6.5, 0);
+            ctx.bezierCurveTo(6.5, -4, 3, -6.5, 0, -3);
+            ctx.closePath(); ctx.fill();
+        } else if (effect === 'run_magnet') {
+            ctx.beginPath();
+            ctx.arc(0, 3, 4.5, Math.PI, 0, true);
+            ctx.lineTo(4.5, -4);
+            ctx.lineTo(2, -4);
+            ctx.lineTo(2, 3);
+            ctx.lineTo(-2, 3);
+            ctx.lineTo(-2, -4);
+            ctx.lineTo(-4.5, -4);
+            ctx.closePath(); ctx.fill();
+            ctx.fillStyle = "#EF4444"; ctx.fillRect(-4.5, -5.5, 2.5, 2.2);
+            ctx.fillStyle = "#3B82F6"; ctx.fillRect(2, -5.5, 2.5, 2.2);
+        } else if (effect === 'run_booster') {
+            ctx.beginPath();
+            ctx.moveTo(2, -7); ctx.lineTo(-4, -1); ctx.lineTo(-1, -1);
+            ctx.lineTo(-3, 7); ctx.lineTo(3, 1); ctx.lineTo(0, 1);
+            ctx.closePath(); ctx.fill();
+        }
+        ctx.restore();
+    }
+
+    // ==========================================
+    // [게임 1: 벽돌깨기 코어 비즈니스 로직 서브루틴]
+    // ==========================================
+    function resetBreakerGame() {
+        const vx = ballSpeed * 0.6; const vy = -ballSpeed * 0.8;
+        balls = [{ x: canvas.width / 2, y: canvas.height - 35, dx: vx, dy: vy, radius: initialBallRadius, isFireball: false, color: "#FFFFFF" }];
+        paddleWidth = basePaddleWidth; paddleX = (canvas.width - paddleWidth) / 2;
+        powerUps = []; particles = []; bottomShieldActive = false;
+    }
+
+    function initBricks(stageNum) {
+        bricks = []; let rows = 5; let cols = 8;
+        brickWidth = Math.floor((canvas.width - (brickOffsetLeft * 2) - (brickPadding * (cols - 1))) / cols);
+        for (let c = 0; c < cols; c++) {
+            bricks[c] = [];
+            for (let r = 0; r < rows; r++) {
+                let status = 1, strength = 1;
+                
+                if (stageNum === 1 && r >= 3) status = 0;
+                else if (stageNum === 2 && ((c + r) % 2 === 0 || r >= 4)) status = 0;
+                else if (stageNum === 3 && r % 2 === 1 && c % 3 === 0) status = 0;
+                else if (stageNum === 4 && Math.abs(c - 3.5) + Math.abs(r - 2) > 3) status = 0;
+                else if (stageNum === 5 && (r > c || r > (7 - c))) status = 0;
+                else if (stageNum === 6 && c % 2 === 0 && r % 2 === 0) status = 0;
+                else if (stageNum === 7 && r >= 3) status = 1;
+
+                if (stageNum >= 3 && r === 0) strength = 2;
+                if (stageNum === 7 && r <= 1) strength = 2;
+                
+                bricks[c][r] = { x: 0, y: 0, status: status, maxStrength: strength, strength: strength, color: strength > 1 ? "#A855F7" : ["#FF2A7A", "#FF7A00", "#FFD600", "#00FF66", "#00F2FE"][r % 5] };
+            }
+        }
+    }
+
+    function updateAndDrawBreaker(deltaTime) {
+        ctx.strokeStyle = "#131622"; ctx.lineWidth = 0.5;
+        for (let i = 40; i < canvas.width; i += 40) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); ctx.stroke(); }
+        for (let j = 40; j < canvas.height; j += 40) { ctx.beginPath(); ctx.moveTo(0,j); ctx.lineTo(canvas.width,j); ctx.stroke(); }
+
+        drawBricks(); drawPaddle(); drawBreakerShield(); drawParticles();
+
+        if (isCountdownActive) {
+            balls.forEach(b => drawCircleBall(b));
+            drawCountdownText();
+            return;
+        }
+
+        updatePowerUpsBreaker();
+        
+        for (let i = balls.length - 1; i >= 0; i--) {
+            let ball = balls[i];
+            ball.x += ball.dx; ball.y += ball.dy;
+
+            if (ball.x + ball.dx > canvas.width - ball.radius || ball.x + ball.dx < ball.radius) { ball.dx = -ball.dx; playSound('bounce'); }
+            if (ball.y + ball.dy < ball.radius) { ball.dy = -ball.dy; playSound('bounce'); }
+            else if (ball.y + ball.dy > canvas.height - ball.radius - 4) {
+                if (bottomShieldActive) {
+                    ball.dy = -Math.abs(ball.dy); ball.y = canvas.height - ball.radius - 10;
+                    bottomShieldActive = false; delete activePowerUps["shield"]; updateActiveItemsUI();
+                    playSound('bounce'); continue;
+                }
+                if (ball.x >= paddleX && ball.x <= paddleX + paddleWidth) {
+                    let cp = (ball.x - (paddleX + paddleWidth/2)) / (paddleWidth/2);
+                    let angle = cp * (Math.PI / 3);
+                    ball.dx = ballSpeed * Math.sin(angle); ball.dy = -ballSpeed * Math.cos(angle);
+                    ball.y = canvas.height - paddleHeight - ball.radius - 6;
+                    playSound('bounce');
+                } else {
+                    balls.splice(i, 1);
+                    if (balls.length === 0) {
+                        lives--; updateLivesUI();
+                        if (lives <= 0) { endGame(false); return; }
+                        else { resetBreakerGame(); startCountdown(); }
+                    }
+                }
+            }
+            if (balls[i]) drawCircleBall(ball);
+        }
+
+        breakerCollisionDetection();
+
+        if (rightPressed && paddleX < canvas.width - paddleWidth) paddleX += paddleSpeed;
+        if (leftPressed && paddleX > 0) paddleX -= paddleSpeed;
+    }
+
+    function drawCircleBall(ball) {
+        ctx.save(); ctx.translate(ball.x, ball.y);
+        ctx.shadowBlur = ball.isFireball ? 22 : 12;
+        ctx.shadowColor = ball.isFireball ? "#EF4444" : "#00F2FE";
+
+        let orbAngle = (Date.now() / 120) % (Math.PI * 2);
+        ctx.strokeStyle = ball.isFireball ? "#EF4444" : "#00F2FE";
+        ctx.lineWidth = 1.3;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, ball.radius + 3.5, ball.radius - 1.5, orbAngle, 0, Math.PI*2);
+        ctx.stroke();
+
+        ctx.fillStyle = "#FFFFFF";
+        ctx.beginPath();
+        ctx.arc(0, 0, ball.radius - 1.5, 0, Math.PI*2);
+        ctx.fill();
+
+        ctx.fillStyle = ball.isFireball ? "#EF4444" : "#00F2FE";
+        ctx.globalAlpha = 0.65;
+        ctx.beginPath();
+        ctx.arc(0, 0, ball.radius - 3.5, 0, Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    function drawPaddle() {
+        ctx.save(); ctx.translate(paddleX, canvas.height - paddleHeight - 4);
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = "#00F2FE";
+
+        ctx.fillStyle = "#111424";
+        ctx.strokeStyle = "#475569";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(0, 0, paddleWidth, paddleHeight, 5);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(0, 2, 4, paddleHeight - 4);
+        ctx.fillRect(paddleWidth - 4, 2, 4, paddleHeight - 4);
+
+        ctx.fillStyle = "#00F2FE";
+        ctx.beginPath();
+        ctx.roundRect(6, 3.5, paddleWidth - 12, paddleHeight - 7, 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    function drawBricks() {
+        for (let c = 0; c < bricks.length; c++) {
+            for (let r = 0; r < bricks[c].length; r++) {
+                let b = bricks[c][r];
+                if (b.status === 1) {
+                    let brickX = (c * (brickWidth + brickPadding)) + brickOffsetLeft;
+                    let brickY = (r * (brickHeight + brickPadding)) + brickOffsetTop;
+                    b.x = brickX; b.y = brickY;
+                    
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.roundRect(brickX, brickY, brickWidth, brickHeight, 4);
+                    ctx.fillStyle = "#09090b"; ctx.fill();
+                    ctx.strokeStyle = b.color;
+                    ctx.lineWidth = 2;
+                    ctx.shadowBlur = b.strength > 1 ? 10 : 4;
+                    ctx.shadowColor = b.color;
+                    ctx.stroke();
+                    ctx.closePath();
+                    ctx.restore();
+                }
+            }
+        }
+    }
+
+    function drawBreakerShield() {
+        if (bottomShieldActive) {
+            ctx.save(); ctx.fillStyle = "#3B82F6"; ctx.shadowBlur = 8; ctx.shadowColor = "#3B82F6";
+            ctx.fillRect(0, canvas.height - 4, canvas.width, 4); ctx.restore();
+        }
+    }
+
+    function breakerCollisionDetection() {
+        for (let c = 0; c < bricks.length; c++) {
+            for (let r = 0; r < bricks[c].length; r++) {
+                let b = bricks[c][r];
+                if (b.status === 1) {
+                    balls.forEach(ball => {
+                        if (ball.x > b.x && ball.x < b.x + brickWidth && ball.y > b.y && ball.y < b.y + brickHeight) {
+                            b.strength--;
+                            if (b.strength <= 0) {
+                                b.status = 0; score += 10; scoreDisplay.textContent = score;
+                                playSound('break'); spawnParticles(b.x + brickWidth/2, b.y + brickHeight/2, b.color);
+                                if (Math.random() < 0.25) spawnPowerUpBreaker(b.x + brickWidth/2, b.y + brickHeight/2);
+                            } else { playSound('bounce'); }
+                            
+                            if (!ball.isFireball) ball.dy = -ball.dy;
+                            checkBreakerClear();
+                        }
+                    });
+                }
+            }
+        }
+    }
+
+    function checkBreakerClear() {
+        let remain = false;
+        for (let c = 0; c < bricks.length; c++) {
+            for (let r = 0; r < bricks[c].length; r++) { if (bricks[c][r].status === 1) remain = true; }
+        }
+        if (!remain) {
+            if (stage < 7) { 
+                stage++; stageDisplay.textContent = stage; initBricks(stage); 
+                lives = 3; updateLivesUI();
+                resetBreakerGame(); startCountdown(); 
+            }
+            else endGame(true);
+        }
+    }
+
+    function spawnPowerUpBreaker(x, y) {
+        let type = itemTypesBreaker[Math.floor(Math.random() * itemTypesBreaker.length)];
+        powerUps.push({ x: x, y: y, type: type, speed: 2 });
+    }
+
+    function updatePowerUpsBreaker() {
+        for (let i = powerUps.length - 1; i >= 0; i--) {
+            let p = powerUps[i]; p.y += p.speed;
+            if (p.y > canvas.height) { powerUps.splice(i, 1); continue; }
+            
+            if (p.y >= canvas.height - paddleHeight - 16 && p.x >= paddleX && p.x <= paddleX + paddleWidth) {
+                activateBreakerItem(p.type);
+                powerUps.splice(i, 1);
+                continue;
+            }
+            drawProceduralItem(p.x, p.y, p.type);
+        }
+    }
+
+    function activateBreakerItem(type) {
+        playSound('powerup');
+        const effect = type.effect;
+        const duration = type.duration;
+
+        if (effect === 'life') { if (lives < 5) lives++; updateLivesUI(); return; }
+        if (effect === 'multi') {
+            if (balls.length > 0) {
+                let base = balls[0];
+                balls.push({ x: base.x, y: base.y, dx: base.dx + 1.2, dy: -Math.abs(base.dy), radius: initialBallRadius, isFireball: base.isFireball, color: base.color });
+                balls.push({ x: base.x, y: base.y, dx: base.dx - 1.2, dy: -Math.abs(base.dy), radius: initialBallRadius, isFireball: base.isFireball, color: base.color });
+            }
+            return;
+        }
+
+        if (activePowerUps[effect]) {
+            activePowerUps[effect].timeLeft = duration;
+        } else {
+            activePowerUps[effect] = { name: type.name, color: type.color, icon: type.icon, timeLeft: duration, maxDuration: duration };
+            if (effect === 'long') paddleWidth = basePaddleWidth * 1.5;
+            if (effect === 'fire') balls.forEach(b => { b.isFireball = true; b.color = "#EF4444"; });
+            if (effect === 'shield') bottomShieldActive = true;
+        }
+        updateActiveItemsUI();
+    }
+
+
+    // ==========================================
+    // [게임 2: 네온 러너 코어 비즈니스 로직 서브루틴]
+    // ==========================================
+    function resetRunnerGame() {
+        runnerPlayer.lane = 1;
+        runnerPlayer.targetX = runnerLanesX[1];
+        runnerPlayer.currentX = runnerLanesX[1];
+        runnerPlayer.y = 340;
+        runnerPlayer.isJumping = false;
+        runnerPlayer.jumpProgress = 0;
+        runnerEntities = [];
+        entitySpawnTimer = 0;
+        runnerSpeed = 3.4;
+        particles = [];
+    }
+
+    function updateAndDrawRunner(deltaTime) {
+        trackScrollY = (trackScrollY + runnerSpeed) % 60;
+        ctx.strokeStyle = "#1e293b"; ctx.lineWidth = 2;
+        
+        runnerLanesX.forEach((lineX) => {
+            ctx.save();
+            ctx.fillStyle = "rgba(10, 11, 20, 0.4)";
+            ctx.fillRect(lineX - 44, 0, 88, canvas.height);
+            
+            ctx.strokeStyle = "rgba(0, 242, 254, 0.35)";
+            ctx.lineWidth = 2.5;
+            ctx.shadowBlur = 10; ctx.shadowColor = "#00F2FE";
+            ctx.beginPath();
+            ctx.moveTo(lineX - 45, 0); ctx.lineTo(lineX - 45, canvas.height);
+            ctx.moveTo(lineX + 45, 0); ctx.lineTo(lineX + 45, canvas.height);
+            ctx.stroke();
+            
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
+            ctx.lineWidth = 1;
+            for(let y = trackScrollY - 60; y < canvas.height; y += 60) {
+                ctx.beginPath(); ctx.moveTo(lineX - 44, y); ctx.lineTo(lineX + 44, y); ctx.stroke();
+            }
+            ctx.restore();
+        });
+
+        drawParticles();
+
+        if (isCountdownActive) {
+            drawRunnerPlayer();
+            drawCountdownText();
+            return;
+        }
+
+        stage += Math.floor(runnerSpeed * 0.05);
+        stageDisplay.textContent = stage + "m";
+        runnerSpeed = 3.4 + (stage * 0.002);
+
+        entitySpawnTimer += deltaTime;
+        if (entitySpawnTimer >= entitySpawnInterval) {
+            entitySpawnTimer = 0;
+            spawnRunnerEntity();
+        }
+
+        for (let i = runnerEntities.length - 1; i >= 0; i--) {
+            let ent = runnerEntities[i];
+            ent.y += runnerSpeed;
+
+            if (activePowerUps["run_magnet"] && ent.type === 'gold' && ent.y > 100) {
+                let dx = runnerPlayer.currentX - ent.x;
+                let dy = runnerPlayer.y - ent.y;
+                let dist = Math.sqrt(dx*dx + dy*dy);
+                if(dist < 180) {
+                    ent.x += (dx / dist) * (runnerSpeed * 1.5);
+                    ent.y += (dy / dist) * (runnerSpeed * 1.5);
+                }
+            }
+            if (activePowerUps["run_booster"] && ent.type === 'gold') {
+                ent.x += (runnerPlayer.currentX - ent.x) * 0.28;
+                ent.y += (runnerPlayer.y - ent.y) * 0.28;
+            }
+
+            if (ent.y > canvas.height + 20) { runnerEntities.splice(i, 1); continue; }
+
+            let hitX = Math.abs(ent.x - runnerPlayer.currentX) < 22;
+            let hitY = Math.abs(ent.y - runnerPlayer.y) < 22;
+
+            if (hitX && hitY) {
+                if (ent.type === 'gold') {
+                    score += 25; scoreDisplay.textContent = score;
+                    playSound('coin'); spawnParticles(ent.x, ent.y, "#FFD600");
+                    runnerEntities.splice(i, 1); continue;
+                }
+                else if (ent.type === 'item') {
+                    activateRunnerItem(ent.itemData);
+                    runnerEntities.splice(i, 1); continue;
+                }
+                else if (ent.type === 'obstacle') {
+                    let canPass = runnerPlayer.isJumping && ent.type === 'obstacle';
+                    
+                    if (activePowerUps["run_booster"]) {
+                        score += 50; scoreDisplay.textContent = score;
+                        playSound('break'); spawnParticles(ent.x, ent.y, "#EF4444");
+                        runnerEntities.splice(i, 1); continue;
+                    }
+
+                    if (!canPass) {
+                        if (activePowerUps["run_shield"]) {
+                            delete activePowerUps["run_shield"]; updateActiveItemsUI();
+                            playSound('break'); spawnParticles(ent.x, ent.y, "#3B82F6");
+                            runnerEntities.splice(i, 1); continue;
+                        }
+
+                        lives--; updateLivesUI();
+                        playSound('gameover'); spawnParticles(runnerPlayer.currentX, runnerPlayer.y, "#FF0055");
+                        runnerEntities.splice(i, 1);
+                        if (lives <= 0) { endGame(false); return; }
+                        continue;
+                    }
+                }
+            }
+            drawRunnerEntity(ent);
+        }
+
+        runnerPlayer.currentX += (runnerPlayer.targetX - runnerPlayer.currentX) * 0.22;
+
+        if (runnerPlayer.isJumping) {
+            runnerPlayer.jumpProgress += deltaTime;
+            if (runnerPlayer.jumpProgress >= runnerPlayer.jumpDuration) {
+                runnerPlayer.isJumping = false; runnerPlayer.jumpProgress = 0;
+            }
+        }
+        drawRunnerPlayer();
+    }
+
+    function spawnRunnerEntity() {
+        let randLane = Math.floor(Math.random() * 3);
+        let rx = runnerLanesX[randLane];
+        let randType = Math.random();
+
+        if (randType < 0.50) {
+            runnerEntities.push({ x: rx, y: -20, type: 'gold', color: "#FFD600" });
+        } else if (randType < 0.85) {
+            runnerEntities.push({ x: rx, y: -20, type: 'obstacle', color: "#EF4444" });
+        } else {
+            let item = itemTypesRunner[Math.floor(Math.random() * itemTypesRunner.length)];
+            runnerEntities.push({ x: rx, y: -20, type: 'item', itemData: item, color: item.color });
+        }
+    }
+
+    function drawRunnerEntity(ent) {
+        ctx.save(); ctx.translate(ent.x, ent.y);
+        ctx.shadowBlur = 10; ctx.shadowColor = ent.color;
+
+        if (ent.type === 'gold') {
+            let spinVal = Math.abs(Math.sin(Date.now() / 150));
+            ctx.scale(spinVal, 1.0);
+            ctx.fillStyle = "#F59E0B"; ctx.strokeStyle = "#FBBF24"; ctx.lineWidth = 1.8;
+            ctx.beginPath(); ctx.arc(0, 0, 9, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+            ctx.strokeStyle = "#FEF08A"; ctx.lineWidth = 0.8;
+            ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI*2); ctx.stroke();
+        } else if (ent.type === 'obstacle') {
+            ctx.fillStyle = "#1e293b"; ctx.strokeStyle = "#475569"; ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.roundRect(-20, 2, 40, 7, 2); ctx.fill(); ctx.stroke();
+
+            ctx.fillStyle = ent.color; ctx.shadowColor = ent.color; ctx.shadowBlur = 12;
+            ctx.beginPath();
+            ctx.moveTo(-13, 2); ctx.lineTo(-9, -9); ctx.lineTo(-5, 2);
+            ctx.moveTo(-4, 2); ctx.lineTo(0, -11); ctx.lineTo(4, 2);
+            ctx.moveTo(5, 2); ctx.lineTo(9, -9); ctx.lineTo(13, 2);
+            ctx.fill();
+        } else if (ent.type === 'item') {
+            drawProceduralItem(0, 0, ent.itemData);
+        }
+        ctx.restore();
+    }
+
+    function drawRunnerPlayer() {
+        ctx.save();
+        let displayY = runnerPlayer.y;
+        let scaleSize = 1.0;
+
+        if (runnerPlayer.isJumping) {
+            let norm = runnerPlayer.jumpProgress / runnerPlayer.jumpDuration;
+            let height = Math.sin(norm * Math.PI) * 36;
+            displayY -= height;
+            scaleSize = 1.0 + (Math.sin(norm * Math.PI) * 0.35);
+        }
+
+        ctx.translate(runnerPlayer.currentX, displayY);
+        ctx.scale(scaleSize, scaleSize);
+
+        let flameColor = activePowerUps["run_booster"] ? "#10B981" : "#EC4899";
+        ctx.shadowBlur = 18; ctx.shadowColor = flameColor; ctx.fillStyle = flameColor;
+        ctx.beginPath(); ctx.moveTo(-5, 12); ctx.lineTo(0, 24 + Math.random() * 8); ctx.lineTo(5, 12); ctx.fill();
+
+        let boardColor = "#00F2FE";
+        if (activePowerUps["run_booster"]) boardColor = "#10B981";
+        else if (activePowerUps["run_shield"]) boardColor = "#3B82F6";
+
+        ctx.fillStyle = "#1e293b"; ctx.strokeStyle = boardColor; ctx.lineWidth = 2.5;
+        ctx.shadowBlur = 12; ctx.shadowColor = boardColor;
+        ctx.beginPath(); ctx.ellipse(0, 0, 8, 20, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+
+        ctx.strokeStyle = boardColor;
+        ctx.beginPath();
+        ctx.moveTo(-8, 5); ctx.lineTo(-13, 11); ctx.lineTo(-8, 13);
+        ctx.moveTo(8, 5); ctx.lineTo(13, 11); ctx.lineTo(8, 13);
+        ctx.stroke();
+
+        ctx.fillStyle = "#0f172a"; ctx.shadowBlur = 0;
+        ctx.beginPath(); ctx.arc(0, -3, 5, 0, Math.PI*2); ctx.fill();
+
+        ctx.fillStyle = boardColor; ctx.shadowBlur = 8; ctx.shadowColor = boardColor;
+        ctx.beginPath(); ctx.arc(0, -7, 3.5, 0, Math.PI*2); ctx.fill();
+
+        ctx.fillStyle = "#334155"; ctx.fillRect(-5, 2, 3.5, 3); ctx.fillRect(2, -3, 3.5, 3);
+
+        if (activePowerUps["run_shield"]) {
+            ctx.strokeStyle = "rgba(59, 130, 246, 0.5)"; ctx.lineWidth = 2; ctx.shadowColor = "#3B82F6"; ctx.shadowBlur = 12;
+            ctx.beginPath(); ctx.arc(0, -2, 22, 0, Math.PI*2); ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    function activateRunnerItem(type) {
+        playSound('powerup');
+        const effect = type.effect;
+        const duration = type.duration;
+
+        if (activePowerUps[effect]) {
+            activePowerUps[effect].timeLeft = duration;
+        } else {
+            activePowerUps[effect] = { name: type.name, color: type.color, icon: type.icon, timeLeft: duration, maxDuration: duration };
+        }
+        updateActiveItemsUI();
+    }
+
+    // ==========================================
+    // [공통 이펙트 및 백엔드 보조 연산 로직]
+    // ==========================================
+    function processPowerUpTimers(deltaTime) {
+        let changed = false;
+        for (const key in activePowerUps) {
+            activePowerUps[key].timeLeft -= deltaTime;
+            if (activePowerUps[key].timeLeft <= 0) {
+                if (key === 'long') paddleWidth = basePaddleWidth;
+                if (key === 'fire') balls.forEach(b => { b.isFireball = false; b.color = "#FFFFFF"; });
+                if (key === 'shield') bottomShieldActive = false;
+                
+                delete activePowerUps[key]; changed = true;
+            } else { changed = true; }
+        }
+        if (changed) updateActiveItemsUI();
+    }
+
+    function updateActiveItemsUI() {
+        activeItemsList.innerHTML = "";
+        const keys = Object.keys(activePowerUps);
+        if (keys.length === 0) { noItemsText.classList.remove("hidden"); return; }
+        noItemsText.classList.add("hidden");
+
+        keys.forEach(k => {
+            let item = activePowerUps[k];
+            let percent = (item.timeLeft / item.maxDuration) * 100;
+            let row = document.createElement("div");
+            row.className = "flex items-center justify-between text-xs py-0.5";
+            row.innerHTML = `
+                <div class="px-1.5 py-0.5 rounded font-bold border text-[10px] bg-gray-950/80" style="border-color:${item.color}; color:${item.color}; box-shadow: 0 0 5px ${item.color}33;">
+                    ${item.icon} ${item.name}
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="w-20 bg-gray-800 h-1 rounded-full overflow-hidden">
+                        <div class="h-full" style="background-color:${item.color}; width:${percent}%"></div>
+                    </div>
+                    <span class="text-[10px] font-mono font-bold" style="color:${item.color}">${(item.timeLeft/1000).toFixed(1)}s</span>
+                </div>`;
+            activeItemsList.appendChild(row);
+        });
+    }
+
+    function spawnParticles(x, y, color) {
+        for (let i = 0; i < 10; i++) {
+            particles.push({ x: x, y: y, vx: (Math.random()-0.5)*5, vy: (Math.random()-0.5)*5, radius: Math.random()*2+1, color: color, alpha: 1, decay: Math.random()*0.02+0.02 });
+        }
+    }
+
+    function drawParticles() {
+        for (let i = particles.length - 1; i >= 0; i--) {
+            let p = particles[i]; p.x += p.vx; p.y += p.vy; p.alpha -= p.decay;
+            if (p.alpha <= 0) { particles.splice(i, 1); }
+            else {
+                ctx.save(); ctx.globalAlpha = p.alpha; ctx.fillStyle = p.color;
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI*2); ctx.fill(); ctx.restore();
+            }
+        }
+    }
+
+    function drawCountdownText() {
+        ctx.save(); ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.font = "bold 35px Arial"; ctx.fillStyle = "#00F2FE"; ctx.shadowBlur = 10; ctx.shadowColor = "#00F2FE";
+        ctx.fillText("READY?", canvas.width/2, canvas.height/2 - 30);
+        ctx.font = "bold 65px Arial"; ctx.fillStyle = countdownValue === "GO!" ? "#00FF66" : "#FFD600";
+        ctx.shadowColor = ctx.fillStyle; ctx.fillText(countdownValue, canvas.width/2, canvas.height/2 + 35);
+        ctx.restore();
+    }
+
+    function updateLivesUI() {
+        let h = ""; for(let i=0; i<lives; i++) h += "❤️ "; livesContainer.textContent = h;
+    }
+
+    const speedButtons = document.querySelectorAll(".speed-btn");
+    speedButtons.forEach(btn => {
+        btn.addEventListener("click", (e) => {
+            currentSpeedPreset = e.target.getAttribute("data-speed");
+            ballSpeed = SPEED_PRESETS[currentSpeedPreset];
+            speedButtons.forEach(b => b.className = "speed-btn px-2 py-1.5 bg-gray-900 border border-gray-800 text-gray-400 rounded-lg font-bold transition");
+            e.target.className = "speed-btn px-2 py-1.5 bg-cyan-950/30 border border-cyan-500/50 text-cyan-400 rounded-lg font-bold transition shadow-[0_0_5px_rgba(0,242,254,0.3)]";
+        });
+    });
+    document.querySelector('[data-speed="normal"]').className = "speed-btn px-2 py-1.5 bg-cyan-950/30 border border-cyan-500/50 text-cyan-400 rounded-lg font-bold transition shadow-[0_0_5px_rgba(0,242,254,0.3)]";
+
+    startButton.addEventListener("click", startGame);
+    restartButton.addEventListener("click", () => { resultScreen.classList.add("hidden"); exitToHub(); });
+    pauseButton.addEventListener("click", (e) => { togglePause(); e.blur(); });
+</script>
+</body>
+</html>
